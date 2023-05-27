@@ -6,12 +6,13 @@ Elemente de retinut:
 - folosirea glutSpecialFunc si glutKeyboardFunc pentru interactiunea cu tastatura
 */
 
-#include<gl/freeglut.h>
-#include<math.h>
+#include <gl/freeglut.h>
+#include <math.h>
 #include "SOIL.h"
 #include <windows.h>
 #include <chrono>
 #include <iostream>
+
 
 using namespace std;
 
@@ -20,9 +21,9 @@ std::chrono::high_resolution_clock::time_point currentTime;
 
 
 // angle of rotation for the camera direction
-float angle = 0.0;
+double angle = 2 * acos(0.0);;
 // actual vector representing the camera's direction
-float lx = 0.0f, lz = -1.0f;
+float lx = 0.0f, lz = 1.0f;
 // XZ position of the camera
 float x = 0.0f, z = 5.0f;
 GLuint textureWater, textureAsphalt, textureFront, textureBack, textureLeft, textureRight, textureTop, textureBottom, textureSky;
@@ -32,6 +33,7 @@ GLboolean keyLeftPressed, keyRightPressed, keyUpPressed, keyDownPressed = false;
 int frameCount = 0;
 float fpsDeltaTime = 0;
 GLuint textureID;
+float zCar, xCar;
 
 void changeSize(int w, int h)
 {
@@ -148,11 +150,21 @@ void update(float deltaTime) {
 
 	if (fpsDeltaTime >= 1.0)
 	{
-		cout << frameCount << endl;
+		cout << "FPS: " << frameCount << endl;
 
 		frameCount = 0;
 		fpsDeltaTime = 0;
 	}
+
+	zCar += moveSpeed * deltaTime;
+	if (zCar > 100) {
+		zCar = -100;
+	}
+
+	//xCar += moveSpeed * deltaTime;
+	//if (xCar > 100) {
+	//	xCar = -100;
+	//}
 
 }
 
@@ -353,7 +365,7 @@ void renderScene(void)
 	//	}
 
 	glPushMatrix();
-	glTranslatef(0, 0.6, 0);
+	glTranslatef(xCar, 0.6, 10);
 	glRotatef(90.0f, 0.0, 1.0, 0.0);
 	drawCar();
 	glPopMatrix();
@@ -420,35 +432,6 @@ void processSpecialKeys(int key, int xx, int yy) {
 		break;
 	}
 }
-
-//void processSpecialKeys(int key, int xx, int yy) {
-//
-//	float fraction = 0.1f;
-//
-//	switch (key)
-//	{
-//	case GLUT_KEY_LEFT:
-//		angle -= 0.01f;
-//		lx = sin(angle);
-//		lz = -cos(angle);
-//		break;
-//	case GLUT_KEY_RIGHT:
-//		angle += 0.01f;
-//		lx = sin(angle);
-//		lz = -cos(angle);
-//		break;
-//	case GLUT_KEY_UP:
-//		x += lx * fraction;
-//		z += lz * fraction;
-//		break;
-//	case GLUT_KEY_DOWN:
-//		x -= lx * fraction;
-//		z -= lz * fraction;
-//		break;
-//	}
-//
-//
-//}
 
 // Functie check activata la eliberarea tastelor
 void keyUp(int key, int x, int y) {
