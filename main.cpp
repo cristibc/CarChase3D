@@ -25,12 +25,13 @@ float angle = 0.0;
 float lx = 0.0f, lz = -1.0f;
 // XZ position of the camera
 float x = 0.0f, z = 5.0f;
-GLuint textureWater;
+GLuint textureWater, textureAsphalt, textureFront, textureBack, textureLeft, textureRight, textureTop, textureBottom, textureSky;
 float cameraSpeed = 0.7f;
 float moveSpeed = 3.0f;
 GLboolean keyLeftPressed, keyRightPressed, keyUpPressed, keyDownPressed = false;
 int frameCount = 0;
 float fpsDeltaTime = 0;
+GLuint textureID;
 
 void changeSize(int w, int h)
 {
@@ -50,42 +51,72 @@ void changeSize(int w, int h)
 	glViewport(0, 0, w, h);
 
 	// Set the correct perspective.
-	gluPerspective(45.0f, ratio, 0.1f, 100.0f);
+	gluPerspective(45.0f, ratio, 0.1f, 500.0f);
 
 	// Get Back to the Modelview
 	glMatrixMode(GL_MODELVIEW);
 }
 
-void drawSnowMan()
-{
-	glColor3f(1.0f, 1.0f, 1.0f);
-
-	// Draw Body
-	glTranslatef(0.0f, 0.75f, 0.0f);
-	glutSolidSphere(0.75f, 20, 20);
-
-	// Draw Head
-	glTranslatef(0.0f, 1.0f, 0.0f);
-	glutSolidSphere(0.25f, 20, 20);
-
-	// Draw Eyes
+void drawCar() {
+	// Body
+	glColor3f(0.0f, 0.745f, 1.0f);  // Gray color
 	glPushMatrix();
-	glColor3f(0.0f, 0.0f, 0.0f);
-	glTranslatef(0.05f, 0.10f, 0.18f);
-	glutSolidSphere(0.05f, 10, 10);
-	glTranslatef(-0.1f, 0.0f, 0.0f);
-	glutSolidSphere(0.05f, 10, 10);
+	glScalef(2.0f, 0.5f, 1.0f);  // Adjust the size of the car body
+	glutSolidCube(1.0);
 	glPopMatrix();
 
-	// Draw Nose
-	glColor3f(1.0f, 0.5f, 0.5f);
-	glutSolidCone(0.08f, 0.5f, 10, 2);
+	// Cabin
+	glColor3f(0.0f, 0.455f, 0.612f);  // Blue color
+	glPushMatrix();
+	glTranslatef(0.0f, 0.5f, 0.0f);  // Position the cabin on top of the body
+	glScalef(0.8f, 0.5f, 0.8f);  // Adjust the size of the cabin
+	glutSolidCube(1.0);
+	glPopMatrix();
+
+	// Wheels
+	glColor3f(0.0f, 0.0f, 0.0f);  // Black color
+	glPushMatrix();
+	glTranslatef(-0.5f, -0.25f, 0.3f);  // Front left wheel position
+	glutSolidCylinder(0.25, 0.25, 20, 20);  // Adjust the size of the wheels
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.5f, -0.25f, 0.3f);  // Rear left wheel position
+	glutSolidCylinder(0.25, 0.25, 20, 20);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(-0.5f, -0.25f, -0.55f);  // Front right wheel position
+	glutSolidCylinder(0.25, 0.25, 20, 20);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.5f, -0.25f, -0.55f);  // Rear right wheel position
+	glutSolidCylinder(0.25, 0.25, 20, 20);
+	glPopMatrix();
+
 }
+
+
+
 
 void init(void) {
 	textureWater = SOIL_load_OGL_texture("water.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MIPMAPS);
-}
+	textureAsphalt = SOIL_load_OGL_texture("asphalt.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MIPMAPS);
+	//textureFront = SOIL_load_OGL_texture("textures/bluecloud_front.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	//textureBack = SOIL_load_OGL_texture("textures/bluecloud_back.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	//textureLeft = SOIL_load_OGL_texture("textures/bluecloud_left.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	//textureRight = SOIL_load_OGL_texture("textures/bluecloud_right.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	//textureTop = SOIL_load_OGL_texture("textures/bluecloud_top.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	//textureBottom = SOIL_load_OGL_texture("textures/bluecloud_bottom.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	textureFront = SOIL_load_OGL_texture("skybox/front.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	textureBack = SOIL_load_OGL_texture("skybox/back.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	textureLeft = SOIL_load_OGL_texture("skybox/left.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	textureRight = SOIL_load_OGL_texture("skybox/right.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	textureTop = SOIL_load_OGL_texture("skybox/top.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	textureBottom = SOIL_load_OGL_texture("skybox/bottom.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 
+}
 
 void update(float deltaTime) {
 	float distanceToMove = cameraSpeed * deltaTime;
@@ -125,6 +156,91 @@ void update(float deltaTime) {
 
 }
 
+void drawSky(void) {
+	// Enable/Disable features
+	glPushAttrib(GL_ENABLE_BIT);
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_BLEND);
+
+	// Enable texture filtering
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	float skyboxSize = 300.0f;
+
+	// Render the front quad
+	glBindTexture(GL_TEXTURE_2D, textureFront);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(skyboxSize, -skyboxSize, -skyboxSize);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(-skyboxSize, -skyboxSize, -skyboxSize);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(-skyboxSize, skyboxSize, -skyboxSize);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(skyboxSize, skyboxSize, -skyboxSize);
+	glEnd();
+
+	// Render the left quad
+	glBindTexture(GL_TEXTURE_2D, textureLeft);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(skyboxSize, -skyboxSize, skyboxSize);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(skyboxSize, -skyboxSize, -skyboxSize);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(skyboxSize, skyboxSize, -skyboxSize);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(skyboxSize, skyboxSize, skyboxSize);
+	glEnd();
+
+	// Render the back quad
+	glBindTexture(GL_TEXTURE_2D, textureBack);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-skyboxSize, -skyboxSize, skyboxSize);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(skyboxSize, -skyboxSize, skyboxSize);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(skyboxSize, skyboxSize, skyboxSize);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(-skyboxSize, skyboxSize, skyboxSize);
+	glEnd();
+
+	// Render the right quad
+	glBindTexture(GL_TEXTURE_2D, textureRight);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-skyboxSize, -skyboxSize, -skyboxSize);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(-skyboxSize, -skyboxSize, skyboxSize);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(-skyboxSize, skyboxSize, skyboxSize);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(-skyboxSize, skyboxSize, -skyboxSize);
+	glEnd();
+
+	// Render the top quad
+	glBindTexture(GL_TEXTURE_2D, textureTop);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(-skyboxSize, skyboxSize, -skyboxSize);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-skyboxSize, skyboxSize, skyboxSize);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(skyboxSize, skyboxSize, skyboxSize);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(skyboxSize, skyboxSize, -skyboxSize);
+	glEnd();
+
+	// Render the bottom quad
+	glBindTexture(GL_TEXTURE_2D, textureBottom);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-skyboxSize, -skyboxSize, -skyboxSize);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(-skyboxSize, -skyboxSize, skyboxSize);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(skyboxSize, -skyboxSize, skyboxSize);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(skyboxSize, -skyboxSize, -skyboxSize);
+	glEnd();
+
+	// Restore enable bits and matrix
+	glPopAttrib();
+
+}
 
 void renderScene(void)
 {
@@ -137,6 +253,8 @@ void renderScene(void)
 	gluLookAt(x, 1.0f, z,
 		x + lx, 1.0f, z + lz,
 		0.0f, 1.0f, 0.0f);
+
+	drawSky();
 
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
 
@@ -158,23 +276,90 @@ void renderScene(void)
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
 
-	glColor3f(0.9f, 0.9f, 0.9f);
+	// Asphalt
+	//glColor3f(0.9f, 0.9f, 0.9f);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, textureAsphalt);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glBegin(GL_QUADS);
-	glVertex3f(-10.0f, 0.1f, -50.0f);
-	glVertex3f(-10.0f, 0.1f, 50.0f);
-	glVertex3f(10.0f, 0.1f, 50.0f);
-	glVertex3f(10.0f, 0.1f, -50.0f);
+	glTexCoord2f(0, 0);
+	glVertex3f(-10.0f, 0.1f, -100.0f);
+	glTexCoord2f(10, 0);
+	glVertex3f(-10.0f, 0.1f, 100.0f);
+	glTexCoord2f(10, 10);
+	glVertex3f(10.0f, 0.1f, 100.0f);
+	glTexCoord2f(0, 10);
+	glVertex3f(10.0f, 0.1f, -100.0f);
 	glEnd();
+	glDisable(GL_TEXTURE_2D);
 
-	 //Draw 36 SnowMen
-	for (int i = -3; i < 3; i++)
-		for (int j = -3; j < 3; j++)
-		{
-			glPushMatrix();
-			glTranslatef(i * 10.0, 0, j * 10.0);
-			drawSnowMan();
-			glPopMatrix();
-		}
+	// Median of road
+
+	glColor3f(1.0f, 1.0f, 1.0f);
+	float lineLength = 3.0f;
+	float lineHeight = 0.11f;
+	float lineStart = -100.0f;
+	float lineEnd = 100.0f;
+	float lineWidth = 0.1f;
+	float lineSpacing = 7.0f;
+	float lineXPos = -3.33f;
+
+	for (float z = lineStart; z < lineEnd; z += lineSpacing)
+	{
+		glBegin(GL_QUADS);
+		glVertex3f(lineXPos-lineWidth, lineHeight, z);
+		glVertex3f(lineXPos-lineWidth, lineHeight, z + lineSpacing - lineLength);
+		glVertex3f(lineXPos+lineWidth, lineHeight, z + lineSpacing - lineLength);
+		glVertex3f(lineXPos+lineWidth, lineHeight, z);
+		glEnd();
+	}
+
+	lineLength = 3.0f; // Spacing between each segment
+	lineHeight = 0.11f; // Height of the line
+	lineStart = -100.0f; // Starting position of the line
+	lineEnd = 100.0f; // Ending position of the line
+	lineWidth = 0.1f; // Width of each segment
+	lineSpacing = 7.0f;
+	lineXPos = 3.33f;
+
+
+	for (float z = lineStart; z < lineEnd; z += lineSpacing)
+	{
+		glBegin(GL_QUADS);
+		glVertex3f(lineXPos - lineWidth, lineHeight, z);
+		glVertex3f(lineXPos - lineWidth, lineHeight, z + lineSpacing - lineLength);
+		glVertex3f(lineXPos + lineWidth, lineHeight, z + lineSpacing - lineLength);
+		glVertex3f(lineXPos + lineWidth, lineHeight, z);
+		glEnd();
+	}
+
+	//glBegin(GL_QUADS);
+	//glVertex3f(-1.0f, 0.2f, -70.0f);
+	//glVertex3f(-1.0f, 0.2f, 70.0f);
+	//glVertex3f(1.0f, 0.2f, 70.0f);
+	//glVertex3f(1.0f, 0.2f, -70.0f);
+	//glEnd();
+
+
+	//Draw 36 SnowMen
+	//for (int i = -3; i < 3; i++)
+	//	for (int j = -3; j < 3; j++)
+	//	{
+	//		glPushMatrix();
+	//		glTranslatef(i * 10.0, 0.6, j * 10.0);
+	//		drawCar();
+	//		glPopMatrix();
+	//	}
+
+	glPushMatrix();
+	glTranslatef(0, 0.6, 0);
+	glRotatef(90.0f, 0.0, 1.0, 0.0);
+	drawCar();
+	glPopMatrix();
+
+
+
 	glutSwapBuffers();
 	frameCount++;
 
@@ -312,7 +497,7 @@ int main(int argc, char** argv)
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(100, 100);
-	glutInitWindowSize(600, 600);
+	glutInitWindowSize(1200, 800);
 	glutCreateWindow("Proiect 3D");
 
 	init();
@@ -337,4 +522,3 @@ int main(int argc, char** argv)
 
 	return 1;
 }
-
