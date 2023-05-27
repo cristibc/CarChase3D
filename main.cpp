@@ -12,6 +12,7 @@ Elemente de retinut:
 #include <windows.h>
 #include <chrono>
 #include <iostream>
+#include <string>
 
 
 using namespace std;
@@ -19,14 +20,14 @@ using namespace std;
 std::chrono::high_resolution_clock::time_point previousTime;
 std::chrono::high_resolution_clock::time_point currentTime;
 
-
+const float PI = 3.14159f;
 // angle of rotation for the camera direction
-double angle = 2 * acos(0.0);;
+double angle = 0.0;
 // actual vector representing the camera's direction
-float lx = 0.0f, lz = 1.0f;
+float lx = 0.0f, lz = -1.0f;
 // XZ position of the camera
 float x = 0.0f, z = 5.0f;
-GLuint textureWater, textureAsphalt, textureFront, textureBack, textureLeft, textureRight, textureTop, textureBottom, textureSky;
+GLuint textureWater, textureAsphalt, textureFront, textureBack, textureLeft, textureRight, textureTop, textureBottom, textureSky, textureCrash;
 float cameraSpeed = 0.7f;
 float moveSpeed = 3.0f;
 GLboolean keyLeftPressed, keyRightPressed, keyUpPressed, keyDownPressed = false;
@@ -34,6 +35,27 @@ int frameCount = 0;
 float fpsDeltaTime = 0;
 GLuint textureID;
 float zCar, xCar;
+float sceneSpeed = 0;
+
+int obstacol1, obstacol2, obstacol3;
+bool initObstacle1, initObstacle2, initObstacle3;
+double iObstacol1 = 50;
+double iObstacol2 = 50;
+double iObstacol3 = 50;
+float genR, genG, genB;
+float genR1, genG1, genB1;
+float genR2, genG2, genB2;
+float genR3, genG3, genB3;
+bool collisionCheck = false;
+double xCoin = 0;
+double yCoin = 50;
+bool displayCoin = false;
+int chance = 2;
+double score = 0;
+
+float increasingSpeed = 1;
+
+
 
 void changeSize(int w, int h)
 {
@@ -59,16 +81,48 @@ void changeSize(int w, int h)
 	glMatrixMode(GL_MODELVIEW);
 }
 
-void drawCar() {
+void increaseScore(int value) {
+	if (collisionCheck != true) {
+		score += 1;
+	}
+	glutTimerFunc(100, increaseScore, 0);
+}
+
+// Functie pentru adaugarea textului mai usor
+void displayText(float x, float y, const std::string& text) {
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glOrtho(0, glutGet(GLUT_WINDOW_WIDTH), 0, glutGet(GLUT_WINDOW_HEIGHT), -1, 1);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glRasterPos2f(x, y);
+
+	for (char c : text) {
+		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+	}
+
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+}
+
+void drawCar(float R, float G, float B) {
+	glPushMatrix();
+	glRotatef(90.0f, 0.0, 1.0, 0.0);
 	// Body
-	glColor3f(0.0f, 0.745f, 1.0f);  // Gray color
+	glColor3f(R, G, B);  // Gray color
 	glPushMatrix();
 	glScalef(2.0f, 0.5f, 1.0f);  // Adjust the size of the car body
 	glutSolidCube(1.0);
 	glPopMatrix();
 
 	// Cabin
-	glColor3f(0.0f, 0.455f, 0.612f);  // Blue color
+	glColor3f(R - 0.3, G - 0.3, B - 0.3);  // Blue color
 	glPushMatrix();
 	glTranslatef(0.0f, 0.5f, 0.0f);  // Position the cabin on top of the body
 	glScalef(0.8f, 0.5f, 0.8f);  // Adjust the size of the cabin
@@ -96,6 +150,136 @@ void drawCar() {
 	glTranslatef(0.5f, -0.25f, -0.55f);  // Rear right wheel position
 	glutSolidCylinder(0.25, 0.25, 20, 20);
 	glPopMatrix();
+	glPopMatrix();
+
+
+}
+
+void generateLucky() {
+	int isLucky;
+	xCoin = 0;
+	yCoin = 50;
+	displayCoin = false;
+	isLucky = rand() % chance;
+	if (isLucky == 0) {
+		cout << "Lucky one!" << endl;
+		chance = 2;
+		yCoin = -50;
+		displayCoin = true;
+	}
+	else {
+		cout << "You're not lucky! chance: 1/" << chance << endl;
+		chance = chance / 2;
+	}
+}
+
+void generateColor(void) {
+
+	int pickPrimary = rand() % 6;
+	if (pickPrimary == 0) {
+		genR = 1;
+		genG = (float)rand() / (float)RAND_MAX;
+		genB = 0;
+	}
+	else if (pickPrimary == 1) {
+		genR = (float)rand() / (float)RAND_MAX;
+		genG = 1;
+		genB = 0;
+	}
+	else if (pickPrimary == 2) {
+		genR = 0;
+		genG = 1;
+		genB = (float)rand() / (float)RAND_MAX;
+	}
+	else if (pickPrimary == 3) {
+		genR = 0;
+		genG = (float)rand() / (float)RAND_MAX;
+		genB = 1;
+	}
+	else if (pickPrimary == 4) {
+		genR = (float)rand() / (float)RAND_MAX;
+		genG = 0;
+		genB = 1;
+	}
+	else if (pickPrimary == 5) {
+		genR = 1;
+		genG = 0;
+		genB = (float)rand() / (float)RAND_MAX;
+	}
+}
+
+bool Collision(double x1, double y1, double x2, double y2, double xWidth, double xHeight, double yWidth, double yHeight) {
+	if (x1 < x2 + yWidth && x1 + xWidth > x2 && y1 < y2 + yHeight && y1 + xHeight > y2)
+	{
+		//collisionCheck = true;
+		return 1;
+	}
+	return 0;
+}
+
+
+// Generatorul de masini obstacole, acestea sunt generate random
+void Obstacole(int value) {
+	// Initializam indicele pentru translatie
+	iObstacol1 = 50;
+	iObstacol2 = 50;
+	iObstacol3 = 50;
+
+	// Check-uri pentru existenta obstacolelor
+	initObstacle1 = false;
+	initObstacle2 = false;
+	initObstacle3 = false;
+
+	// Generam un set de obstacole pozitionate random, intre 1 si 2 obstacole
+	if (collisionCheck != true) {
+		generateLucky();
+
+		srand(time(NULL));
+		cout << "Called function" << endl;
+		obstacol1 = rand() % 2;
+		obstacol2 = rand() % 2;
+		obstacol3 = rand() % 2;
+		int sumObstacol = obstacol1 + obstacol2 + obstacol3;
+		while (sumObstacol < 1 || sumObstacol > 2) {
+			cout << obstacol1 << " " << obstacol2 << " " << obstacol3 << endl;
+			obstacol1 = rand() % 2;
+			obstacol2 = rand() % 2;
+			obstacol3 = rand() % 2;
+			sumObstacol = obstacol1 + obstacol2 + obstacol3;
+		}
+		cout << "Good obstacle path: " << obstacol1 << " " << obstacol2 << " " << obstacol3 << endl;
+
+
+		if (obstacol1 == 1) {
+			iObstacol1 = -50;
+			initObstacle1 = true;
+			generateColor();
+			genR1 = genR;
+			genG1 = genG;
+			genB1 = genB;
+		}
+
+		if (obstacol2 == 1) {
+			iObstacol2 = -50;
+			initObstacle2 = true;
+			generateColor();
+			genR2 = genR;
+			genG2 = genG;
+			genB2 = genB;
+		}
+
+		if (obstacol3 == 1) {
+			iObstacol3 = -50;
+			initObstacle3 = true;
+			generateColor();
+			genR3 = genR;
+			genG3 = genG;
+			genB3 = genB;
+		}
+	}
+
+	// Timer pentru loop-ul obstacolelor
+	glutTimerFunc(4000, Obstacole, 0);
 
 }
 
@@ -105,44 +289,80 @@ void drawCar() {
 void init(void) {
 	textureWater = SOIL_load_OGL_texture("water.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MIPMAPS);
 	textureAsphalt = SOIL_load_OGL_texture("asphalt.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MIPMAPS);
-	//textureFront = SOIL_load_OGL_texture("textures/bluecloud_front.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
-	//textureBack = SOIL_load_OGL_texture("textures/bluecloud_back.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
-	//textureLeft = SOIL_load_OGL_texture("textures/bluecloud_left.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
-	//textureRight = SOIL_load_OGL_texture("textures/bluecloud_right.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
-	//textureTop = SOIL_load_OGL_texture("textures/bluecloud_top.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
-	//textureBottom = SOIL_load_OGL_texture("textures/bluecloud_bottom.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 	textureFront = SOIL_load_OGL_texture("skybox/front.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 	textureBack = SOIL_load_OGL_texture("skybox/back.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 	textureLeft = SOIL_load_OGL_texture("skybox/left.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 	textureRight = SOIL_load_OGL_texture("skybox/right.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 	textureTop = SOIL_load_OGL_texture("skybox/top.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 	textureBottom = SOIL_load_OGL_texture("skybox/bottom.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	textureCrash = SOIL_load_OGL_texture("crash.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 
+	//glEnable(GL_FOG);
+	GLfloat fogColor[] = { 0.8f, 0.8f, 0.8f, 1.0f }; // Set the fog color
+	glFogfv(GL_FOG_COLOR, fogColor);
+	glFogi(GL_FOG_MODE, GL_EXP); // Set the fog mode (linear fog)
+	glFogf(GL_FOG_DENSITY, 0.05f); // Set the fog density
+	glFogf(GL_FOG_START, 50.0f); // Set the fog start distance
+	glFogf(GL_FOG_END, 100.0f); // Set the fog end distance
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void update(float deltaTime) {
 	float distanceToMove = cameraSpeed * deltaTime;
+	float cameraSpeed = 5;
 
-	if (keyLeftPressed) {
-		angle -= cameraSpeed * deltaTime;
-		lx = sin(angle);
-		lz = -cos(angle);
+	if (keyLeftPressed && x > -3) {
+		x -= distanceToMove * cameraSpeed;
+		xCar -= distanceToMove * cameraSpeed;
 	}
 
-	if (keyRightPressed) {
-		angle += cameraSpeed * deltaTime;
-		lx = sin(angle);
-		lz = -cos(angle);
+	if (keyRightPressed && x < 3) {
+		x += distanceToMove * cameraSpeed;
+		xCar += distanceToMove * cameraSpeed;
+
 	}
+	increasingSpeed += 0.0001;
+
+	sceneSpeed += distanceToMove * 20 * increasingSpeed;
+	if (sceneSpeed > 11)
+		sceneSpeed = -10;
+
+	//cout << "increasingSpeed: " << increasingSpeed << endl;
+
+	if (initObstacle1 == 1 && iObstacol1 < 100) {
+		iObstacol1 += distanceToMove * 20 * increasingSpeed;
+	}
+
+	if (initObstacle2 == 1 && iObstacol2 < 100) {
+		iObstacol2 += distanceToMove * 20 * increasingSpeed;
+	}
+
+	if (initObstacle3 == 1 && iObstacol3 < 100) {
+		iObstacol3 += distanceToMove * 20 * increasingSpeed;
+	}
+
+	if (initObstacle1 == 0 && displayCoin == true) {
+		xCoin = -2.1;
+		yCoin += distanceToMove * 20 * increasingSpeed;
+	}
+	else if (initObstacle2 == 0 && displayCoin == true) {
+		xCoin = 0;
+		yCoin += distanceToMove * 20 * increasingSpeed;
+	}
+	else if (initObstacle3 == 0 && displayCoin == true) {
+		xCoin = 2.1;
+		yCoin += distanceToMove * 20 * increasingSpeed;
+	}
+
 
 	if (keyUpPressed) {
-		x += lx * moveSpeed * deltaTime;
-		z += lz * moveSpeed * deltaTime;
+		z += distanceToMove;
 	}
 
 	if (keyDownPressed) {
-		x -= lx * moveSpeed * deltaTime;
-		z -= lz * moveSpeed * deltaTime;
+		z -= distanceToMove;
 	}
 
 	fpsDeltaTime += deltaTime;
@@ -161,11 +381,83 @@ void update(float deltaTime) {
 		zCar = -100;
 	}
 
+	// Collision check for obstacles
+	if (Collision(xCar-0.2, 2, -2.1, iObstacol1, 1.2, 2, 1, 2) == 1) {
+		collisionCheck = true;
+	}
+
+	if (Collision(xCar-0.2, 2, 0, iObstacol2, 1.2, 2, 1, 2) == 1) {
+		collisionCheck = true;
+	}
+
+	if (Collision(xCar-0.2, 2, 2.1, iObstacol3, 1.2, 2, 1, 2) == 1) {
+		collisionCheck = true;
+	}
+
+	// Collision check for coin
+	if (Collision(xCar - 0.2, 1, xCoin, yCoin, 1.2, 2, 1, 1) == 1) {
+		score += 100;
+		xCoin = 0;
+		yCoin = 50;
+		cout << "Touched coin!" << endl;
+	}
+
 	//xCar += moveSpeed * deltaTime;
 	//if (xCar > 100) {
 	//	xCar = -100;
 	//}
 
+}
+
+void drawCoin() {
+	const int numSides = 100;  // Number of sides of the coin
+	const float radius = 0.5f; // Radius of the coin
+
+	glPushMatrix();
+
+	// Draw front face of the coin
+	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
+	glBegin(GL_TRIANGLE_FAN);
+	glVertex3f(0.0f, 0.0f, 0.0f); // Center of the front face
+
+	for (int i = 0; i <= numSides; ++i) {
+		float angle = static_cast<float>(i) / numSides * 2.0f * PI;
+		float x = radius * cos(angle);
+		float y = radius * sin(angle);
+		glVertex3f(x, y, 0.0f);
+	}
+
+	glEnd();
+
+	// Draw back face of the coin
+	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
+	glBegin(GL_TRIANGLE_FAN);
+	glVertex3f(0.0f, 0.0f, -0.2f); // Center of the back face
+
+	for (int i = numSides; i >= 0; --i) {
+		float angle = static_cast<float>(i) / numSides * 2.0f * PI;
+		float x = radius * cos(angle);
+		float y = radius * sin(angle);
+		glVertex3f(x, y, -0.2f);
+	}
+
+	glEnd();
+
+	// Draw the coin's side
+	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
+	glBegin(GL_QUAD_STRIP);
+
+	for (int i = 0; i <= numSides; ++i) {
+		float angle = static_cast<float>(i) / numSides * 2.0f * PI;
+		float x = radius * cos(angle);
+		float y = radius * sin(angle);
+		glVertex3f(x, y, 0.0f);
+		glVertex3f(x, y, -0.2f);
+	}
+
+	glEnd();
+
+	glPopMatrix();
 }
 
 void drawSky(void) {
@@ -256,125 +548,194 @@ void drawSky(void) {
 
 void renderScene(void)
 {
-	// Clear Color and Depth Buffers
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// Reset transformations
-	glLoadIdentity();
-	// Set the camera
-	gluLookAt(x, 1.0f, z,
-		x + lx, 1.0f, z + lz,
-		0.0f, 1.0f, 0.0f);
-
-	drawSky();
-
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-
-	// Draw ground
-	//glColor3f(0.9f, 0.9f, 0.9f);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textureWater);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glBegin(GL_QUADS);
-	glTexCoord2f(0, 0);
-	glVertex3f(-100.0f, 0.0f, -100.0f);
-	glTexCoord2f(10, 0);
-	glVertex3f(-100.0f, 0.0f, 100.0f);
-	glTexCoord2f(10, 10);
-	glVertex3f(100.0f, 0.0f, 100.0f);
-	glTexCoord2f(0, 10);
-	glVertex3f(100.0f, 0.0f, -100.0f);
-	glEnd();
-	glDisable(GL_TEXTURE_2D);
-
-	// Asphalt
-	//glColor3f(0.9f, 0.9f, 0.9f);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textureAsphalt);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glBegin(GL_QUADS);
-	glTexCoord2f(0, 0);
-	glVertex3f(-10.0f, 0.1f, -100.0f);
-	glTexCoord2f(10, 0);
-	glVertex3f(-10.0f, 0.1f, 100.0f);
-	glTexCoord2f(10, 10);
-	glVertex3f(10.0f, 0.1f, 100.0f);
-	glTexCoord2f(0, 10);
-	glVertex3f(10.0f, 0.1f, -100.0f);
-	glEnd();
-	glDisable(GL_TEXTURE_2D);
-
-	// Median of road
-
-	glColor3f(1.0f, 1.0f, 1.0f);
-	float lineLength = 3.0f;
-	float lineHeight = 0.11f;
-	float lineStart = -100.0f;
-	float lineEnd = 100.0f;
-	float lineWidth = 0.1f;
-	float lineSpacing = 7.0f;
-	float lineXPos = -3.33f;
-
-	for (float z = lineStart; z < lineEnd; z += lineSpacing)
+	if (collisionCheck != true)
 	{
+		// Clear Color and Depth Buffers
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// Reset transformations
+		glLoadIdentity();
+		// Set the camera
+		// Default camera below
+		//gluLookAt(x, 1.0f, z,
+		//	x + lx, 1.0f, z + lz,
+		//	0.0f, 1.0f, 0.0f);
+
+		gluLookAt(x, 2.0f, z,
+			x, 1.0f, z - 4,
+			0.0f, 1.0f, 0.0f);
+
+		drawSky();
+
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+
+		//Moving the scene
+		glPushMatrix();
+		glTranslatef(0, 0, sceneSpeed);
+
+		// Draw ground
+		//glColor3f(0.9f, 0.9f, 0.9f);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, textureWater);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glBegin(GL_QUADS);
-		glVertex3f(lineXPos-lineWidth, lineHeight, z);
-		glVertex3f(lineXPos-lineWidth, lineHeight, z + lineSpacing - lineLength);
-		glVertex3f(lineXPos+lineWidth, lineHeight, z + lineSpacing - lineLength);
-		glVertex3f(lineXPos+lineWidth, lineHeight, z);
+		glTexCoord2f(0, 0);
+		glVertex3f(-200.0f, 0.0f, -200.0f);
+		glTexCoord2f(10, 0);
+		glVertex3f(-200.0f, 0.0f, 200.0f);
+		glTexCoord2f(10, 10);
+		glVertex3f(200.0f, 0.0f, 200.0f);
+		glTexCoord2f(0, 10);
+		glVertex3f(200.0f, 0.0f, -200.0f);
 		glEnd();
-	}
+		glDisable(GL_TEXTURE_2D);
 
-	lineLength = 3.0f; // Spacing between each segment
-	lineHeight = 0.11f; // Height of the line
-	lineStart = -100.0f; // Starting position of the line
-	lineEnd = 100.0f; // Ending position of the line
-	lineWidth = 0.1f; // Width of each segment
-	lineSpacing = 7.0f;
-	lineXPos = 3.33f;
-
-
-	for (float z = lineStart; z < lineEnd; z += lineSpacing)
-	{
+		// Asphalt
+		//glColor3f(0.9f, 0.9f, 0.9f);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, textureAsphalt);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glBegin(GL_QUADS);
-		glVertex3f(lineXPos - lineWidth, lineHeight, z);
-		glVertex3f(lineXPos - lineWidth, lineHeight, z + lineSpacing - lineLength);
-		glVertex3f(lineXPos + lineWidth, lineHeight, z + lineSpacing - lineLength);
-		glVertex3f(lineXPos + lineWidth, lineHeight, z);
+		glTexCoord2f(0, 0);
+		glVertex3f(-4.0f, 0.1f, -200.0f);
+		glTexCoord2f(10, 0);
+		glVertex3f(-4.0f, 0.1f, 200.0f);
+		glTexCoord2f(10, 10);
+		glVertex3f(4.0f, 0.1f, 200.0f);
+		glTexCoord2f(0, 10);
+		glVertex3f(4.0f, 0.1f, -200.0f);
 		glEnd();
+		glDisable(GL_TEXTURE_2D);
+
+		// Median of road
+
+		glColor3f(1.0f, 1.0f, 1.0f);
+		float lineLength = 3.0f;
+		float lineHeight = 0.11f;
+		float lineStart = -200.0f;
+		float lineEnd = 200.0f;
+		float lineWidth = 0.1f;
+		float lineSpacing = 7.0f;
+		float lineXPos = -1.33f;
+
+		for (float z = lineStart; z < lineEnd; z += lineSpacing)
+		{
+			glBegin(GL_QUADS);
+			glVertex3f(lineXPos - lineWidth, lineHeight, z);
+			glVertex3f(lineXPos - lineWidth, lineHeight, z + lineSpacing - lineLength);
+			glVertex3f(lineXPos + lineWidth, lineHeight, z + lineSpacing - lineLength);
+			glVertex3f(lineXPos + lineWidth, lineHeight, z);
+			glEnd();
+		}
+
+		lineLength = 3.0f; // Spacing between each segment
+		lineHeight = 0.11f; // Height of the line
+		lineStart = -200.0f; // Starting position of the line
+		lineEnd = 200.0f; // Ending position of the line
+		lineWidth = 0.1f; // Width of each segment
+		lineSpacing = 7.0f;
+		lineXPos = 1.33f;
+
+
+		for (float z = lineStart; z < lineEnd; z += lineSpacing)
+		{
+			glBegin(GL_QUADS);
+			glVertex3f(lineXPos - lineWidth, lineHeight, z);
+			glVertex3f(lineXPos - lineWidth, lineHeight, z + lineSpacing - lineLength);
+			glVertex3f(lineXPos + lineWidth, lineHeight, z + lineSpacing - lineLength);
+			glVertex3f(lineXPos + lineWidth, lineHeight, z);
+			glEnd();
+		}
+
+		glPopMatrix();
+
+		// Player Car
+
+		glPushMatrix();
+		glTranslatef(xCar, 0.6, 0);
+		//glRotatef(90.0f, 0.0, 1.0, 0.0);
+		drawCar(0, 0.925, 1);
+		glPopMatrix();
+
+		// Obstacles
+
+		glPushMatrix();
+		glTranslated(-2.1, 0.5, iObstacol1);
+		drawCar(genR1, genG1, genB1);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(xCoin, 0.7, yCoin);
+		drawCoin();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(0, 0.5, iObstacol2);
+		drawCar(genR2, genG2, genB2);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(2.1, 0.5, iObstacol3);
+		drawCar(genR3, genG3, genB3);
+		glPopMatrix();
+
+		glColor3f(1.0, 1.0, 1.0);
+		displayText(30, 750, "Score: ");
+		string scoreString = to_string(int(score));
+		const char* scoreDisplayable = scoreString.c_str();
+		displayText(95, 749, scoreDisplayable);
+
+		glutSwapBuffers();
 	}
+	else {
+		int highScore = score;
+		string highScoreString = to_string(highScore);
+		const char* highScoreDisplayable = highScoreString.c_str();
+		glutIdleFunc(NULL);
+		glClear(GL_COLOR_BUFFER_BIT || GL_DEPTH_BUFFER_BIT);
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
+		gluOrtho2D(0, 1200, 0, 800);
 
-	//glBegin(GL_QUADS);
-	//glVertex3f(-1.0f, 0.2f, -70.0f);
-	//glVertex3f(-1.0f, 0.2f, 70.0f);
-	//glVertex3f(1.0f, 0.2f, 70.0f);
-	//glVertex3f(1.0f, 0.2f, -70.0f);
-	//glEnd();
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
 
+		glDisable(GL_DEPTH_TEST);
 
-	//Draw 36 SnowMen
-	//for (int i = -3; i < 3; i++)
-	//	for (int j = -3; j < 3; j++)
-	//	{
-	//		glPushMatrix();
-	//		glTranslatef(i * 10.0, 0.6, j * 10.0);
-	//		drawCar();
-	//		glPopMatrix();
-	//	}
+		// Bind the game over texture
+		glBindTexture(GL_TEXTURE_2D, textureCrash);
 
-	glPushMatrix();
-	glTranslatef(xCar, 0.6, 10);
-	glRotatef(90.0f, 0.0, 1.0, 0.0);
-	drawCar();
-	glPopMatrix();
+		glEnable(GL_TEXTURE_2D);
 
+		glBegin(GL_QUADS);
+		glTexCoord2f(0, 1); glVertex2f(0, 0);
+		glTexCoord2f(1, 1); glVertex2f(1200, 0);
+		glTexCoord2f(1, 0); glVertex2f(1200, 800);
+		glTexCoord2f(0, 0); glVertex2f(0, 800);
+		glEnd();
 
+		glDisable(GL_TEXTURE_2D);
 
-	glutSwapBuffers();
+		glEnable(GL_DEPTH_TEST);
+
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+
+		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+
+		glColor3f(0.0, 0.0, 0.0);
+		displayText(100, 100, "High Score: ");
+		displayText(75, 40, "Press UP to restart ");
+		displayText(23, 69, highScoreDisplayable);
+
+		glutSwapBuffers();
+	}
 	frameCount++;
-
 }
 
 void idleFunc() {
@@ -406,32 +767,32 @@ void processNormalKeys(unsigned char key, int x, int y)
 		exit(0);
 }
 
-void processSpecialKeys(int key, int xx, int yy) {
-
-	float fraction = 0.1f;
-
-	switch (key)
-	{
-	case GLUT_KEY_LEFT:
-		angle -= 0.01f;
-		lx = sin(angle);
-		lz = -cos(angle);
-		break;
-	case GLUT_KEY_RIGHT:
-		angle += 0.01f;
-		lx = sin(angle);
-		lz = -cos(angle);
-		break;
-	case GLUT_KEY_UP:
-		x += lx * fraction;
-		z += lz * fraction;
-		break;
-	case GLUT_KEY_DOWN:
-		x -= lx * fraction;
-		z -= lz * fraction;
-		break;
-	}
-}
+//void processSpecialKeys(int key, int xx, int yy) {
+//
+//	float fraction = 0.1f;
+//
+//	switch (key)
+//	{
+//	case GLUT_KEY_LEFT:
+//		angle -= 0.01f;
+//		lx = sin(angle);
+//		lz = -cos(angle);
+//		break;
+//	case GLUT_KEY_RIGHT:
+//		angle += 0.01f;
+//		lx = sin(angle);
+//		lz = -cos(angle);
+//		break;
+//	case GLUT_KEY_UP:
+//		x += lx * fraction;
+//		z += lz * fraction;
+//		break;
+//	case GLUT_KEY_DOWN:
+//		x -= lx * fraction;
+//		z -= lz * fraction;
+//		break;
+//	}
+//}
 
 // Functie check activata la eliberarea tastelor
 void keyUp(int key, int x, int y) {
@@ -496,6 +857,9 @@ int main(int argc, char** argv)
 
 	glutSpecialFunc(keyPressed);
 	glutSpecialUpFunc(keyUp);
+
+	glutTimerFunc(5000, Obstacole, 0);
+	glutTimerFunc(100, increaseScore, 0);
 
 	// OpenGL init
 	glEnable(GL_DEPTH_TEST);
