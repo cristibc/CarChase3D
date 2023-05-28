@@ -6,10 +6,10 @@ Elemente de retinut:
 - folosirea glutSpecialFunc si glutKeyboardFunc pentru interactiunea cu tastatura
 */
 
+#include <windows.h>
 #include <gl/freeglut.h>
 #include <math.h>
 #include "SOIL.h"
-#include <windows.h>
 #include <chrono>
 #include <iostream>
 #include <string>
@@ -50,8 +50,9 @@ bool collisionCheck = false;
 double xCoin = 0;
 double yCoin = 50;
 bool displayCoin = false;
-int chance = 2;
+int chance = 50;
 double score = 0;
+float angleCoin = 0;
 
 float increasingSpeed = 1;
 
@@ -163,7 +164,7 @@ void generateLucky() {
 	isLucky = rand() % chance;
 	if (isLucky == 0) {
 		cout << "Lucky one!" << endl;
-		chance = 2;
+		chance = 50;
 		yCoin = -50;
 		displayCoin = true;
 	}
@@ -297,16 +298,18 @@ void init(void) {
 	textureBottom = SOIL_load_OGL_texture("skybox/bottom.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 	textureCrash = SOIL_load_OGL_texture("crash.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 
-	//glEnable(GL_FOG);
+	glEnable(GL_FOG);
 	GLfloat fogColor[] = { 0.8f, 0.8f, 0.8f, 1.0f }; // Set the fog color
 	glFogfv(GL_FOG_COLOR, fogColor);
 	glFogi(GL_FOG_MODE, GL_EXP); // Set the fog mode (linear fog)
-	glFogf(GL_FOG_DENSITY, 0.05f); // Set the fog density
+	glFogf(GL_FOG_DENSITY, 0.06f); // Set the fog density
 	glFogf(GL_FOG_START, 50.0f); // Set the fog start distance
 	glFogf(GL_FOG_END, 100.0f); // Set the fog end distance
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	PlaySound(TEXT("nightrider.wav"), NULL, SND_ASYNC | SND_LOOP);
 }
 
 void update(float deltaTime) {
@@ -355,6 +358,11 @@ void update(float deltaTime) {
 		xCoin = 2.1;
 		yCoin += distanceToMove * 20 * increasingSpeed;
 	}
+
+	if (displayCoin == true) {
+		angleCoin += distanceToMove * 75;
+	}
+	cout << "ANGLECOIN: " << angleCoin << endl;
 
 
 	if (keyUpPressed) {
@@ -414,7 +422,7 @@ void drawCoin() {
 	const float radius = 0.5f; // Radius of the coin
 
 	glPushMatrix();
-
+	glRotatef(angleCoin, 0, 1, 0);
 	// Draw front face of the coin
 	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
 	glBegin(GL_TRIANGLE_FAN);
@@ -718,6 +726,11 @@ void renderScene(void)
 		glTexCoord2f(0, 0); glVertex2f(0, 800);
 		glEnd();
 
+		glColor3f(0.0, 0.0, 0.0);
+		displayText(500, 500, "High Score: ");
+		displayText(480, 465, "Press UP to restart ");
+		displayText(630, 499, highScoreDisplayable);
+
 		glDisable(GL_TEXTURE_2D);
 
 		glEnable(GL_DEPTH_TEST);
@@ -728,10 +741,7 @@ void renderScene(void)
 		glMatrixMode(GL_MODELVIEW);
 		glPopMatrix();
 
-		glColor3f(0.0, 0.0, 0.0);
-		displayText(100, 100, "High Score: ");
-		displayText(75, 40, "Press UP to restart ");
-		displayText(23, 69, highScoreDisplayable);
+
 
 		glutSwapBuffers();
 	}
@@ -803,12 +813,6 @@ void keyUp(int key, int x, int y) {
 	case GLUT_KEY_RIGHT:
 		keyRightPressed = false;
 		break;
-	case GLUT_KEY_UP:
-		keyUpPressed = false;
-		break;
-	case GLUT_KEY_DOWN:
-		keyDownPressed = false;
-		break;
 	default:
 		break;
 	}
@@ -825,10 +829,18 @@ void keyPressed(int key, int x, int y)
 		keyRightPressed = true;
 		break;
 	case GLUT_KEY_UP:
-		keyUpPressed = true;
-		break;
-	case GLUT_KEY_DOWN:
-		keyDownPressed = true;
+		if (collisionCheck == true) {
+			//glClearColor(0, 0.839, 0.082, 1);
+			collisionCheck = false;
+			iObstacol1 = 50;
+			iObstacol2 = 50;
+			iObstacol3 = 50;
+			yCoin = 50;
+			score = 0;
+			increasingSpeed = 1;
+			glutIdleFunc(idleFunc);
+			break;
+		}
 	default:
 		break;
 	}
