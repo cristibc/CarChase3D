@@ -56,6 +56,12 @@ float angleCoin = 0;
 
 float increasingSpeed = 1;
 
+// Light position
+GLfloat lightPos[] = { -40.0f, 20.0f, 15.0f, 0.0f };
+GLfloat white[] = { 1, 1, 1, 1 };
+GLfloat black[] = { 0, 0, 0, 1 };
+GLfloat yellow[] = { 1.0f, 1.0f, 0.0f, 1.0f };
+
 
 
 void changeSize(int w, int h)
@@ -113,14 +119,64 @@ void displayText(float x, float y, const std::string& text) {
 }
 
 void drawCar(float R, float G, float B) {
+
 	glPushMatrix();
 	glRotatef(90.0f, 0.0, 1.0, 0.0);
-	// Body
-	glColor3f(R, G, B);  // Gray color
+
+	GLfloat shadowAmbient[] = { 0.2f, 0.2f, 0.2f, 0.5f }; 
+	GLfloat shadowDiffuse[] = { 0.2f, 0.2f, 0.2f, 0.5f };
+	GLfloat shadowSpecular[] = { 0.0f, 0.0f, 0.0f, 0.5f }; 
+	GLfloat shadowShininess = 0.0f;
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glPushMatrix();
-	glScalef(2.0f, 0.5f, 1.0f);  // Adjust the size of the car body
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, shadowAmbient);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, shadowDiffuse);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, shadowSpecular);
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shadowShininess);
+	glTranslatef(0.05, -0.45, 0.05);
+	glScalef(2.0, 0.0, 1.2);
+	glColor4f(0.0, 0.0, 0.0, 0.3f);
 	glutSolidCube(1.0);
 	glPopMatrix();
+
+	glDisable(GL_BLEND);
+
+	GLfloat ambient1[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+	GLfloat diffuse1[] = { R, G, B, 1.0f };
+	GLfloat specular1[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLfloat shininess1 = 50.0f;
+
+	GLfloat ambient2[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+	GLfloat diffuse2[] = { R-0.3f, G-0.3f, B-0.3f, 1.0f };
+	GLfloat specular2[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLfloat shininess2 = 30.0f;
+
+	glPushMatrix();
+
+	glMaterialfv(GL_FRONT, GL_AMBIENT, ambient1);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse1);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, specular1);
+	glMaterialf(GL_FRONT, GL_SHININESS, shininess1);
+
+	// Body
+	glColor3f(R, G, B);
+	glPushMatrix();
+	glScalef(2.0f, 0.5f, 1.0f); 
+	glutSolidCube(1.0);
+	glPopMatrix();
+
+	glPopMatrix();
+
+	glPushMatrix();
+
+	glMaterialfv(GL_FRONT, GL_AMBIENT, ambient2);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse2);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, specular2);
+	glMaterialf(GL_FRONT, GL_SHININESS, shininess2);
+
 
 	// Cabin
 	glColor3f(R - 0.3, G - 0.3, B - 0.3);  // Blue color
@@ -130,7 +186,11 @@ void drawCar(float R, float G, float B) {
 	glutSolidCube(1.0);
 	glPopMatrix();
 
+	glPopMatrix();
+
+
 	// Wheels
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
 	glColor3f(0.0f, 0.0f, 0.0f);  // Black color
 	glPushMatrix();
 	glTranslatef(-0.5f, -0.25f, 0.3f);  // Front left wheel position
@@ -154,6 +214,25 @@ void drawCar(float R, float G, float B) {
 	glPopMatrix();
 
 
+}
+
+void setupLighting()
+{
+	GLfloat ambientLumina[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat difuzLumina[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat alb[] = { 1.0, 1.0, 1.0, 0.0 };
+	GLfloat directieSpot[] = { 5, -1, -1, 0 };
+
+	// Enable lighting
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glShadeModel(GL_SMOOTH);
+
+	// Set light properties
+	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLumina);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, difuzLumina);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, white);
 }
 
 void generateLucky() {
@@ -309,7 +388,7 @@ void init(void) {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	PlaySound(TEXT("nightrider.wav"), NULL, SND_ASYNC | SND_LOOP);
+	//PlaySound(TEXT("nightrider.wav"), NULL, SND_ASYNC | SND_LOOP);
 }
 
 void update(float deltaTime) {
@@ -326,7 +405,7 @@ void update(float deltaTime) {
 		xCar += distanceToMove * cameraSpeed;
 
 	}
-	increasingSpeed += 0.0001;
+	increasingSpeed += 0.00001;
 
 	sceneSpeed += distanceToMove * 20 * increasingSpeed;
 	if (sceneSpeed > 11)
@@ -362,7 +441,6 @@ void update(float deltaTime) {
 	if (displayCoin == true) {
 		angleCoin += distanceToMove * 75;
 	}
-	cout << "ANGLECOIN: " << angleCoin << endl;
 
 
 	if (keyUpPressed) {
@@ -420,10 +498,12 @@ void update(float deltaTime) {
 void drawCoin() {
 	const int numSides = 100;  // Number of sides of the coin
 	const float radius = 0.5f; // Radius of the coin
-
 	glPushMatrix();
 	glRotatef(angleCoin, 0, 1, 0);
 	// Draw front face of the coin
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, yellow);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, yellow);
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 33.0f);
 	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
 	glBegin(GL_TRIANGLE_FAN);
 	glVertex3f(0.0f, 0.0f, 0.0f); // Center of the front face
@@ -438,6 +518,7 @@ void drawCoin() {
 	glEnd();
 
 	// Draw back face of the coin
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, yellow);
 	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
 	glBegin(GL_TRIANGLE_FAN);
 	glVertex3f(0.0f, 0.0f, -0.2f); // Center of the back face
@@ -452,6 +533,7 @@ void drawCoin() {
 	glEnd();
 
 	// Draw the coin's side
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, yellow);
 	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
 	glBegin(GL_QUAD_STRIP);
 
@@ -573,6 +655,7 @@ void renderScene(void)
 			x, 1.0f, z - 4,
 			0.0f, 1.0f, 0.0f);
 
+		setupLighting();
 		drawSky();
 
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
@@ -618,7 +701,8 @@ void renderScene(void)
 		glDisable(GL_TEXTURE_2D);
 
 		// Median of road
-
+		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, white);
+		glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
 		glColor3f(1.0f, 1.0f, 1.0f);
 		float lineLength = 3.0f;
 		float lineHeight = 0.11f;
@@ -659,6 +743,8 @@ void renderScene(void)
 
 		glPopMatrix();
 
+
+
 		// Player Car
 
 		glPushMatrix();
@@ -670,23 +756,23 @@ void renderScene(void)
 		// Obstacles
 
 		glPushMatrix();
-		glTranslated(-2.1, 0.5, iObstacol1);
+		glTranslated(-2.1, 0.6, iObstacol1);
 		drawCar(genR1, genG1, genB1);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(0, 0.6, iObstacol2);
+		drawCar(genR2, genG2, genB2);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(2.1, 0.6, iObstacol3);
+		drawCar(genR3, genG3, genB3);
 		glPopMatrix();
 
 		glPushMatrix();
 		glTranslated(xCoin, 0.7, yCoin);
 		drawCoin();
-		glPopMatrix();
-
-		glPushMatrix();
-		glTranslated(0, 0.5, iObstacol2);
-		drawCar(genR2, genG2, genB2);
-		glPopMatrix();
-
-		glPushMatrix();
-		glTranslated(2.1, 0.5, iObstacol3);
-		drawCar(genR3, genG3, genB3);
 		glPopMatrix();
 
 		glColor3f(1.0, 1.0, 1.0);
