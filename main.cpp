@@ -28,6 +28,10 @@ float lx = 0.0f, lz = -1.0f;
 // XZ position of the camera
 float x = 0.0f, z = 5.0f;
 GLuint textureWater, textureAsphalt, textureFront, textureBack, textureLeft, textureRight, textureTop, textureBottom, textureSky, textureCrash;
+GLuint texturePoliceFront, texturePoliceBack, texturePoliceRight, texturePoliceLeft;
+GLuint texturePoliceCabinFront, texturePoliceCabinBack, texturePoliceCabinRight, texturePoliceCabinLeft;
+
+
 float cameraSpeed = 0.7f;
 float moveSpeed = 3.0f;
 GLboolean keyLeftPressed, keyRightPressed, keyUpPressed, keyDownPressed = false;
@@ -53,7 +57,9 @@ bool displayCoin = false;
 int chance = 50;
 double score = 0;
 float angleCoin = 0;
-
+bool camera1 = true;
+bool camera2 = false;
+bool camera3 = false;
 float increasingSpeed = 1;
 
 // Light position
@@ -131,6 +137,7 @@ void drawCar(float R, float G, float B) {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	// Shadow of the car
 	glPushMatrix();
 	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, shadowAmbient);
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, shadowDiffuse);
@@ -376,14 +383,23 @@ void init(void) {
 	textureTop = SOIL_load_OGL_texture("skybox/top.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 	textureBottom = SOIL_load_OGL_texture("skybox/bottom.jpg", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 	textureCrash = SOIL_load_OGL_texture("crash.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	texturePoliceFront = SOIL_load_OGL_texture("policecar/police_front.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	texturePoliceBack = SOIL_load_OGL_texture("policecar/police_back.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	texturePoliceLeft = SOIL_load_OGL_texture("policecar/police_left.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	texturePoliceRight = SOIL_load_OGL_texture("policecar/police_right.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	texturePoliceCabinFront = SOIL_load_OGL_texture("policecar/policecabin_front.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	texturePoliceCabinBack = SOIL_load_OGL_texture("policecar/policecabin_back.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	texturePoliceCabinLeft = SOIL_load_OGL_texture("policecar/policecabin_left.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+	texturePoliceCabinRight = SOIL_load_OGL_texture("policecar/policecabin_right.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
+
 
 	glEnable(GL_FOG);
-	GLfloat fogColor[] = { 0.8f, 0.8f, 0.8f, 1.0f }; // Set the fog color
+	GLfloat fogColor[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	glFogfv(GL_FOG_COLOR, fogColor);
-	glFogi(GL_FOG_MODE, GL_EXP); // Set the fog mode (linear fog)
-	glFogf(GL_FOG_DENSITY, 0.06f); // Set the fog density
-	glFogf(GL_FOG_START, 50.0f); // Set the fog start distance
-	glFogf(GL_FOG_END, 100.0f); // Set the fog end distance
+	glFogi(GL_FOG_MODE, GL_EXP);
+	glFogf(GL_FOG_DENSITY, 0.06f);
+	glFogf(GL_FOG_START, 50.0f);
+	glFogf(GL_FOG_END, 100.0f); 
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -410,8 +426,6 @@ void update(float deltaTime) {
 	sceneSpeed += distanceToMove * 20 * increasingSpeed;
 	if (sceneSpeed > 11)
 		sceneSpeed = -10;
-
-	//cout << "increasingSpeed: " << increasingSpeed << endl;
 
 	if (initObstacle1 == 1 && iObstacol1 < 100) {
 		iObstacol1 += distanceToMove * 20 * increasingSpeed;
@@ -462,11 +476,6 @@ void update(float deltaTime) {
 		fpsDeltaTime = 0;
 	}
 
-	zCar += moveSpeed * deltaTime;
-	if (zCar > 100) {
-		zCar = -100;
-	}
-
 	// Collision check for obstacles
 	if (Collision(xCar-0.2, 2, -2.1, iObstacol1, 1.2, 2, 1, 2) == 1) {
 		collisionCheck = true;
@@ -488,25 +497,24 @@ void update(float deltaTime) {
 		cout << "Touched coin!" << endl;
 	}
 
-	//xCar += moveSpeed * deltaTime;
-	//if (xCar > 100) {
-	//	xCar = -100;
-	//}
 
 }
 
 void drawCoin() {
-	const int numSides = 100;  // Number of sides of the coin
-	const float radius = 0.5f; // Radius of the coin
+	const int numSides = 100; 
+	const float radius = 0.5f;
 	glPushMatrix();
 	glRotatef(angleCoin, 0, 1, 0);
-	// Draw front face of the coin
+
+	// Front face of the coin
 	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, yellow);
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, yellow);
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 33.0f);
-	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
+
+	glPushMatrix();
+	glColor3f(1.0f, 1.0f, 0.0f);
 	glBegin(GL_TRIANGLE_FAN);
-	glVertex3f(0.0f, 0.0f, 0.0f); // Center of the front face
+	glVertex3f(0.0f, 0.0f, 0.0f);
 
 	for (int i = 0; i <= numSides; ++i) {
 		float angle = static_cast<float>(i) / numSides * 2.0f * PI;
@@ -516,12 +524,14 @@ void drawCoin() {
 	}
 
 	glEnd();
+	glPopMatrix();
 
-	// Draw back face of the coin
+	// Back face of the coin
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, yellow);
-	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
+	glColor3f(1.0f, 1.0f, 0.0f);
+	glPushMatrix();
 	glBegin(GL_TRIANGLE_FAN);
-	glVertex3f(0.0f, 0.0f, -0.2f); // Center of the back face
+	glVertex3f(0.0f, 0.0f, -0.2f);
 
 	for (int i = numSides; i >= 0; --i) {
 		float angle = static_cast<float>(i) / numSides * 2.0f * PI;
@@ -531,10 +541,12 @@ void drawCoin() {
 	}
 
 	glEnd();
+	glPopMatrix();
 
-	// Draw the coin's side
+	// Coin's side
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, yellow);
 	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
+	glPushMatrix();
 	glBegin(GL_QUAD_STRIP);
 
 	for (int i = 0; i <= numSides; ++i) {
@@ -546,25 +558,27 @@ void drawCoin() {
 	}
 
 	glEnd();
+	glPopMatrix();
 
 	glPopMatrix();
+
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, black);
+
 }
 
 void drawSky(void) {
-	// Enable/Disable features
 	glPushAttrib(GL_ENABLE_BIT);
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_LIGHTING);
 	glDisable(GL_BLEND);
 
-	// Enable texture filtering
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	float skyboxSize = 300.0f;
 
-	// Render the front quad
+	// Front quad
 	glBindTexture(GL_TEXTURE_2D, textureFront);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -575,7 +589,7 @@ void drawSky(void) {
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(skyboxSize, skyboxSize, -skyboxSize);
 	glEnd();
 
-	// Render the left quad
+	// Left quad
 	glBindTexture(GL_TEXTURE_2D, textureLeft);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -587,7 +601,7 @@ void drawSky(void) {
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(skyboxSize, skyboxSize, skyboxSize);
 	glEnd();
 
-	// Render the back quad
+	// Back quad
 	glBindTexture(GL_TEXTURE_2D, textureBack);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -598,7 +612,7 @@ void drawSky(void) {
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(-skyboxSize, skyboxSize, skyboxSize);
 	glEnd();
 
-	// Render the right quad
+	// Right quad
 	glBindTexture(GL_TEXTURE_2D, textureRight);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -609,7 +623,7 @@ void drawSky(void) {
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(-skyboxSize, skyboxSize, -skyboxSize);
 	glEnd();
 
-	// Render the top quad
+	// Top quad
 	glBindTexture(GL_TEXTURE_2D, textureTop);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -620,7 +634,7 @@ void drawSky(void) {
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(skyboxSize, skyboxSize, -skyboxSize);
 	glEnd();
 
-	// Render the bottom quad
+	// Bottom quad
 	glBindTexture(GL_TEXTURE_2D, textureBottom);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -636,6 +650,7 @@ void drawSky(void) {
 
 }
 
+
 void renderScene(void)
 {
 	if (collisionCheck != true)
@@ -647,16 +662,38 @@ void renderScene(void)
 		glLoadIdentity();
 		// Set the camera
 		// Default camera below
+
 		//gluLookAt(x, 1.0f, z,
 		//	x + lx, 1.0f, z + lz,
 		//	0.0f, 1.0f, 0.0f);
 
-		gluLookAt(x, 2.0f, z,
-			x, 1.0f, z - 4,
-			0.0f, 1.0f, 0.0f);
+
+
+		if (camera1 == true) {
+			glEnable(GL_FOG);
+			gluLookAt(x, 2.0f, z,
+				x, 1.0f, z - 4,
+				0.0f, 1.0f, 0.0f);
+		}
+
+		else if (camera2 == true) {
+			glEnable(GL_FOG);
+			gluLookAt(0.0, 2.0f, z,
+				0.0, 1.0f, z - 4,
+				0.0f, 1.0f, 0.0f);
+		}
+
+		else if (camera3 == true) {
+			glDisable(GL_FOG);
+			gluLookAt(0.0, 16.0f, z-9,
+				0.0, 1.0f, z-9,
+				0.0f, 0.0f, -1.0f);
+		}
+
+		drawSky();
 
 		setupLighting();
-		drawSky();
+
 
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
 
@@ -722,11 +759,11 @@ void renderScene(void)
 			glEnd();
 		}
 
-		lineLength = 3.0f; // Spacing between each segment
-		lineHeight = 0.11f; // Height of the line
-		lineStart = -200.0f; // Starting position of the line
-		lineEnd = 200.0f; // Ending position of the line
-		lineWidth = 0.1f; // Width of each segment
+		lineLength = 3.0f;
+		lineHeight = 0.11f;
+		lineStart = -200.0f;
+		lineEnd = 200.0f;
+		lineWidth = 0.1f;
 		lineSpacing = 7.0f;
 		lineXPos = 1.33f;
 
@@ -743,15 +780,173 @@ void renderScene(void)
 
 		glPopMatrix();
 
-
-
 		// Player Car
 
 		glPushMatrix();
 		glTranslatef(xCar, 0.6, 0);
-		//glRotatef(90.0f, 0.0, 1.0, 0.0);
-		drawCar(0, 0.925, 1);
+		glRotatef(180, 0, 1, 0);
+
+		//drawCar(0, 0.925, 1);
+		//glPopMatrix();
+
+		glEnable(GL_TEXTURE_2D);
+
+		glColor3f(1.0f, 1.0f, 1.0f);
+		glPushMatrix();
+		glScalef(1.0f, 0.5f, 2.0f);
+
+		// Front face
+		glBindTexture(GL_TEXTURE_2D, texturePoliceFront);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, -0.5f, 0.5f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, -0.5f, 0.5f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, 0.5f, 0.5f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, 0.5f, 0.5f);
+		glEnd();
+
+		// Back face
+		glBindTexture(GL_TEXTURE_2D, texturePoliceBack);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(0.5f, -0.5f, -0.5f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, 0.5f, -0.5f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(0.5f, 0.5f, -0.5f);
+		glEnd();
+
+		// Left face
+		glBindTexture(GL_TEXTURE_2D, texturePoliceLeft);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, -0.5f, 0.5f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, 0.5f, 0.5f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, 0.5f, -0.5f);
+		glEnd();
+
+		// Right face
+		glBindTexture(GL_TEXTURE_2D, texturePoliceRight);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(0.5f, -0.5f, 0.5f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, -0.5f, -0.5f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, 0.5f, -0.5f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(0.5f, 0.5f, 0.5f);
+		glEnd();
+
+		// Top face
+		glColor3f(0.0f, 0.0f, 0.0f); // Set color to black
+		glBegin(GL_QUADS);
+		glVertex3f(-0.5f, 0.5f, 0.5f);
+		glVertex3f(0.5f, 0.5f, 0.5f);
+		glVertex3f(0.5f, 0.5f, -0.5f);
+		glVertex3f(-0.5f, 0.5f, -0.5f);
+		glEnd();
+
+		// Bottom face
+		glBegin(GL_QUADS);
+		glVertex3f(-0.5f, -0.5f, -0.5f);
+		glVertex3f(0.5f, -0.5f, -0.5f);
+		glVertex3f(0.5f, -0.5f, 0.5f);
+		glVertex3f(-0.5f, -0.5f, 0.5f);
+		glEnd();
+
 		glPopMatrix();
+
+		// CABIN
+
+		glColor3f(1.0f, 1.0f, 1.0f); 
+		glPushMatrix();
+		glTranslatef(0.0f, 0.5f, 0.0f);
+		glScalef(0.8, 0.5f, 0.8f);
+
+		// Front face
+		glBindTexture(GL_TEXTURE_2D, texturePoliceCabinFront);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, -0.5f, 0.5f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, -0.5f, 0.5f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, 0.5f, 0.5f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, 0.5f, 0.5f);
+		glEnd();
+
+		// Back face
+		glBindTexture(GL_TEXTURE_2D, texturePoliceCabinBack);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(0.5f, -0.5f, -0.5f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, 0.5f, -0.5f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(0.5f, 0.5f, -0.5f);
+		glEnd();
+
+		// Left face
+		glBindTexture(GL_TEXTURE_2D, texturePoliceCabinLeft);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, -0.5f, 0.5f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, 0.5f, 0.5f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, 0.5f, -0.5f);
+		glEnd();
+
+		// Right face
+		glBindTexture(GL_TEXTURE_2D, texturePoliceCabinRight);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(0.5f, -0.5f, 0.5f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, -0.5f, -0.5f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, 0.5f, -0.5f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(0.5f, 0.5f, 0.5f);
+		glEnd();
+
+		// Top face
+		glColor3f(0.0f, 0.0f, 0.0f);
+		glBegin(GL_QUADS);
+		glVertex3f(-0.5f, 0.5f, 0.5f);
+		glVertex3f(0.5f, 0.5f, 0.5f);
+		glVertex3f(0.5f, 0.5f, -0.5f);
+		glVertex3f(-0.5f, 0.5f, -0.5f);
+		glEnd();
+
+		// Bottom face
+		glBegin(GL_QUADS);
+		glVertex3f(-0.5f, -0.5f, -0.5f);
+		glVertex3f(0.5f, -0.5f, -0.5f);
+		glVertex3f(0.5f, -0.5f, 0.5f);
+		glVertex3f(-0.5f, -0.5f, 0.5f);
+		glEnd();
+
+		glPopMatrix();
+
+		glRotatef(90, 0, 1, 0);
+
+		// Wheels
+		GLfloat wheelShininess = 100.0f;
+		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
+		glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, wheelShininess);
+
+		glColor3f(0.0f, 0.0f, 0.0f);
+		glPushMatrix();
+		glTranslatef(-0.5f, -0.25f, 0.3f);
+		glutSolidCylinder(0.25, 0.25, 20, 20); 
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(0.5f, -0.25f, 0.3f);
+		glutSolidCylinder(0.25, 0.25, 20, 20);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(-0.5f, -0.25f, -0.55f); 
+		glutSolidCylinder(0.25, 0.25, 20, 20);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(0.5f, -0.25f, -0.55f);
+		glutSolidCylinder(0.25, 0.25, 20, 20);
+
+		glPopMatrix();
+		glPopMatrix();
+		glPopMatrix();
+		glPopMatrix();
+
+		glDisable(GL_TEXTURE_2D);
+
+		// END PLAYER CAR
 
 		// Obstacles
 
@@ -834,6 +1029,7 @@ void renderScene(void)
 	frameCount++;
 }
 
+// Function for updating game physics based on time and not framerate
 void idleFunc() {
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -848,47 +1044,6 @@ void idleFunc() {
 
 	glutPostRedisplay();
 }
-
-void processNormalKeys(unsigned char key, int x, int y)
-{
-	switch (key)
-	{
-	case 'l':
-		angle -= 0.01f;
-		lx = sin(angle);
-		lz = -cos(angle);
-		break;
-	}
-	if (key == 27)
-		exit(0);
-}
-
-//void processSpecialKeys(int key, int xx, int yy) {
-//
-//	float fraction = 0.1f;
-//
-//	switch (key)
-//	{
-//	case GLUT_KEY_LEFT:
-//		angle -= 0.01f;
-//		lx = sin(angle);
-//		lz = -cos(angle);
-//		break;
-//	case GLUT_KEY_RIGHT:
-//		angle += 0.01f;
-//		lx = sin(angle);
-//		lz = -cos(angle);
-//		break;
-//	case GLUT_KEY_UP:
-//		x += lx * fraction;
-//		z += lz * fraction;
-//		break;
-//	case GLUT_KEY_DOWN:
-//		x -= lx * fraction;
-//		z -= lz * fraction;
-//		break;
-//	}
-//}
 
 // Functie check activata la eliberarea tastelor
 void keyUp(int key, int x, int y) {
@@ -933,6 +1088,32 @@ void keyPressed(int key, int x, int y)
 	glutPostRedisplay();
 }
 
+void keysFunc(unsigned char key, int x, int y) {
+	switch (key) {
+	case '1':
+		camera1 = true;
+		camera2 = false;
+		camera3 = false;
+		break;
+
+	case '2':
+		camera1 = false;
+		camera2 = true;
+		camera3 = false;
+		break;
+
+	case '3':
+		camera1 = false;
+		camera2 = false;
+		camera3 = true;
+		break;
+
+	default:
+		break;
+	}
+	glutPostRedisplay();
+}
+
 int main(int argc, char** argv)
 {
 	// init GLUT and create window
@@ -950,11 +1131,10 @@ int main(int argc, char** argv)
 	glutDisplayFunc(renderScene);
 	glutReshapeFunc(changeSize);
 	glutIdleFunc(idleFunc);
-	//glutKeyboardFunc(processNormalKeys);
-	//glutSpecialFunc(processSpecialKeys);
 
 	glutSpecialFunc(keyPressed);
 	glutSpecialUpFunc(keyUp);
+	glutKeyboardFunc(keysFunc);
 
 	glutTimerFunc(5000, Obstacole, 0);
 	glutTimerFunc(100, increaseScore, 0);
