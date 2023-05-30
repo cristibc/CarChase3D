@@ -61,12 +61,17 @@ bool camera1 = true;
 bool camera2 = false;
 bool camera3 = false;
 float increasingSpeed = 1;
+bool flipLight = false;
+bool flipFog = true;
 
 // Light position
 GLfloat lightPos[] = { -40.0f, 20.0f, 15.0f, 0.0f };
 GLfloat white[] = { 1, 1, 1, 1 };
 GLfloat black[] = { 0, 0, 0, 1 };
 GLfloat yellow[] = { 1.0f, 1.0f, 0.0f, 1.0f };
+GLfloat red[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+GLfloat blue[] = { 0.0f, 0.0f, 1.0f, 1.0f };
+
 
 
 
@@ -98,7 +103,16 @@ void increaseScore(int value) {
 	if (collisionCheck != true) {
 		score += 1;
 	}
+
 	glutTimerFunc(100, increaseScore, 0);
+}
+
+void flipTheLight(int value) {
+	if (collisionCheck != true) {
+		flipLight = !flipLight;
+	}
+	glutTimerFunc(1000, flipTheLight, 0);
+
 }
 
 // Functie pentru adaugarea textului mai usor
@@ -168,6 +182,7 @@ void drawCar(float R, float G, float B) {
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specular1);
 	glMaterialf(GL_FRONT, GL_SHININESS, shininess1);
 
+
 	// Body
 	glColor3f(R, G, B);
 	glPushMatrix();
@@ -179,43 +194,129 @@ void drawCar(float R, float G, float B) {
 
 	glPushMatrix();
 
+	glDisable(GL_LIGHTING);
+	glEnable(GL_COLOR_MATERIAL);
+	glPushMatrix();
+	glRotatef(180, 0, 1, 0);
+
+
+	//HeadLights
+
+	// Left Headlight
+	glColor3f(1.0f, 1.0f, 1.0f);
+	glPushMatrix();
+	glTranslatef(-1.05f, 0.05f, -0.33f);
+	glutSolidSphere(0.07, 20, 20);
+	glPopMatrix();
+	// Right Headlight
+	glColor3f(1.0f, 1.0f, 1.0f);
+	glPushMatrix();
+	glTranslatef(-1.05f, 0.05f, 0.33f);
+	glutSolidSphere(0.07, 20, 20); 
+	glPopMatrix();
+
+	//Rear Lights
+
+	// Left Rear Light
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glPushMatrix();
+	glTranslatef(1.0f, 0.06f, -0.33f);
+	glScalef(0.2f, 0.2f, 0.5f); 
+	glutSolidCube(0.5);
+	glPopMatrix();
+	// Right Rear Light
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glPushMatrix();
+	glTranslatef(1.0f, 0.06f, 0.33f);
+	glScalef(0.2f, 0.2f, 0.5f); 
+	glutSolidCube(0.5);
+	glPopMatrix();
+
+	// Left Rear Light DETAIL
+	glColor3f(0.95f, 0.6f, 0.4f);
+	glPushMatrix();
+	glTranslatef(1.01f, 0.06f, -0.33f);
+	glScalef(0.2f, 0.1f, 0.4f);  
+	glutSolidCube(0.5);
+	glPopMatrix();
+	// Right Rear Light DETAIL
+	glColor3f(0.95f, 0.6f, 0.4f);
+	glPushMatrix();
+	glTranslatef(1.01f, 0.06f, 0.33f);
+	glScalef(0.2f, 0.1f, 0.4f);
+	glutSolidCube(0.5);
+	glPopMatrix();
+
+	//Bucata fata gri de la faruri
+	glColor3f(0.3f, 0.3f, 0.3f); 
+	glPushMatrix();
+	glTranslatef(-0.85f, 0.05f, 0.0f);
+	glScalef(0.8f, 0.5f, 1.7f);
+	glutSolidCube(0.5);
+	glPopMatrix();
+
+	//Liniute pe bucata fata gri de la faruri
+	//1
+	glColor3f(0.6f, 0.6f, 0.6f);
+	glPushMatrix();
+	glTranslatef(-0.86f, 0.05f, 0.0f);
+	glScalef(0.8f, 0.05f, 0.9f); 
+	glutSolidCube(0.5);
+	glPopMatrix();
+	//2
+	glColor3f(0.6f, 0.6f, 0.6f);
+	glPushMatrix();
+	glTranslatef(-0.86f, 0.0f, 0.0f);
+	glScalef(0.8f, 0.05f, 0.9f);
+	glutSolidCube(0.5);
+	glPopMatrix();
+	//3
+	glColor3f(0.6f, 0.6f, 0.6f);
+	glPushMatrix();
+	glTranslatef(-0.86f, 0.1f, 0.0f);
+	glScalef(0.8f, 0.05f, 0.9f);
+	glutSolidCube(0.5);
+	glPopMatrix();
+	glPopMatrix();
+
+	glDisable(GL_COLOR_MATERIAL);
+	glEnable(GL_LIGHTING);
+
 	glMaterialfv(GL_FRONT, GL_AMBIENT, ambient2);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse2);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specular2);
 	glMaterialf(GL_FRONT, GL_SHININESS, shininess2);
 
-
 	// Cabin
-	glColor3f(R - 0.3, G - 0.3, B - 0.3);  // Blue color
+	glColor3f(R - 0.3, G - 0.3, B - 0.3);  
 	glPushMatrix();
-	glTranslatef(0.0f, 0.5f, 0.0f);  // Position the cabin on top of the body
-	glScalef(0.8f, 0.5f, 0.8f);  // Adjust the size of the cabin
+	glTranslatef(0.0f, 0.5f, 0.0f); 
+	glScalef(0.8f, 0.5f, 0.8f);
 	glutSolidCube(1.0);
 	glPopMatrix();
 
 	glPopMatrix();
 
-
 	// Wheels
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
-	glColor3f(0.0f, 0.0f, 0.0f);  // Black color
+	glColor3f(0.0f, 0.0f, 0.0f);
 	glPushMatrix();
-	glTranslatef(-0.5f, -0.25f, 0.3f);  // Front left wheel position
-	glutSolidCylinder(0.25, 0.25, 20, 20);  // Adjust the size of the wheels
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(0.5f, -0.25f, 0.3f);  // Rear left wheel position
+	glTranslatef(-0.5f, -0.25f, 0.3f);
 	glutSolidCylinder(0.25, 0.25, 20, 20);
 	glPopMatrix();
 
 	glPushMatrix();
-	glTranslatef(-0.5f, -0.25f, -0.55f);  // Front right wheel position
+	glTranslatef(0.5f, -0.25f, 0.3f);
 	glutSolidCylinder(0.25, 0.25, 20, 20);
 	glPopMatrix();
 
 	glPushMatrix();
-	glTranslatef(0.5f, -0.25f, -0.55f);  // Rear right wheel position
+	glTranslatef(-0.5f, -0.25f, -0.55f);
+	glutSolidCylinder(0.25, 0.25, 20, 20);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.5f, -0.25f, -0.55f);
 	glutSolidCylinder(0.25, 0.25, 20, 20);
 	glPopMatrix();
 	glPopMatrix();
@@ -298,7 +399,6 @@ void generateColor(void) {
 bool Collision(double x1, double y1, double x2, double y2, double xWidth, double xHeight, double yWidth, double yHeight) {
 	if (x1 < x2 + yWidth && x1 + xWidth > x2 && y1 < y2 + yHeight && y1 + xHeight > y2)
 	{
-		//collisionCheck = true;
 		return 1;
 	}
 	return 0;
@@ -392,8 +492,6 @@ void init(void) {
 	texturePoliceCabinLeft = SOIL_load_OGL_texture("policecar/policecabin_left.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 	texturePoliceCabinRight = SOIL_load_OGL_texture("policecar/policecabin_right.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB);
 
-
-	glEnable(GL_FOG);
 	GLfloat fogColor[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	glFogfv(GL_FOG_COLOR, fogColor);
 	glFogi(GL_FOG_MODE, GL_EXP);
@@ -404,7 +502,7 @@ void init(void) {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	//PlaySound(TEXT("nightrider.wav"), NULL, SND_ASYNC | SND_LOOP);
+	PlaySound(TEXT("nightrider.wav"), NULL, SND_ASYNC | SND_LOOP);
 }
 
 void update(float deltaTime) {
@@ -497,6 +595,13 @@ void update(float deltaTime) {
 		cout << "Touched coin!" << endl;
 	}
 
+	if (flipFog) {
+		glEnable(GL_FOG);
+	}
+	else if (!flipFog) {
+		glDisable(GL_FOG);
+	}
+
 
 }
 
@@ -506,7 +611,7 @@ void drawCoin() {
 	glPushMatrix();
 	glRotatef(angleCoin, 0, 1, 0);
 
-	// Front face of the coin
+	// Front
 	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, yellow);
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, yellow);
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 33.0f);
@@ -526,7 +631,7 @@ void drawCoin() {
 	glEnd();
 	glPopMatrix();
 
-	// Back face of the coin
+	// Back
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, yellow);
 	glColor3f(1.0f, 1.0f, 0.0f);
 	glPushMatrix();
@@ -545,7 +650,7 @@ void drawCoin() {
 
 	// Coin's side
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, yellow);
-	glColor3f(1.0f, 1.0f, 0.0f); // Coin color (gray)
+	glColor3f(1.0f, 1.0f, 0.0f);
 	glPushMatrix();
 	glBegin(GL_QUAD_STRIP);
 
@@ -670,21 +775,21 @@ void renderScene(void)
 
 
 		if (camera1 == true) {
-			glEnable(GL_FOG);
 			gluLookAt(x, 2.0f, z,
 				x, 1.0f, z - 4,
 				0.0f, 1.0f, 0.0f);
 		}
 
 		else if (camera2 == true) {
-			glEnable(GL_FOG);
 			gluLookAt(0.0, 2.0f, z,
 				0.0, 1.0f, z - 4,
 				0.0f, 1.0f, 0.0f);
 		}
 
 		else if (camera3 == true) {
-			glDisable(GL_FOG);
+			if (flipFog) {
+				flipFog = !flipFog;
+			}
 			gluLookAt(0.0, 16.0f, z-9,
 				0.0, 1.0f, z-9,
 				0.0f, 0.0f, -1.0f);
@@ -786,14 +891,164 @@ void renderScene(void)
 		glTranslatef(xCar, 0.6, 0);
 		glRotatef(180, 0, 1, 0);
 
+		GLfloat shadowAmbient[] = { 0.2f, 0.2f, 0.2f, 0.5f };
+		GLfloat shadowDiffuse[] = { 0.2f, 0.2f, 0.2f, 0.5f };
+		GLfloat shadowSpecular[] = { 0.0f, 0.0f, 0.0f, 0.5f };
+		GLfloat shadowShininess = 0.0f;
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		// Shadow of the car
+		glPushMatrix();
+		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, shadowAmbient);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, shadowDiffuse);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, shadowSpecular);
+		glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shadowShininess);
+		glTranslatef(-0.05, -0.45, 0.05);
+		glRotatef(90, 0, 1, 0);
+		glScalef(2.0, 0.0, 1.2);
+		glColor4f(0.0, 0.0, 0.0, 0.3f);
+		glutSolidCube(1.0);
+		glPopMatrix();
+
+		glDisable(GL_BLEND);
+
+		glDisable(GL_LIGHTING);
+
+		glEnable(GL_COLOR_MATERIAL);
+		glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+
+;
 		//drawCar(0, 0.925, 1);
 		//glPopMatrix();
 
+		// Girofar
+		glPushMatrix();
+		glTranslatef(-0.18, 0.8, 0.2);
+		glScalef(0.35, 0.05, 0.1);
+		if (flipLight) {
+			glColor4f(1.0, 0.0, 0.0, 1.0);
+		}
+		else {
+			glColor4f(0.0, 0.0, 1.0, 1.0);
+
+		}
+		glutSolidCube(1.0);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(0.18, 0.8, 0.2);
+		glScalef(0.35, 0.05, 0.1);
+		if (flipLight) {
+			glColor4f(0.0, 0.0, 1.0, 1.0);
+		}
+		else {
+			glColor4f(1.0, 0.0, 0.0, 1.0);
+
+		}
+		glutSolidCube(1.0);
+		glPopMatrix();
+
+		glPushMatrix();
+		glRotatef(90, 0, 1, 0);
+
+		//HeadLights
+
+		// Left Headlight
+		glColor3f(1.0f, 1.0f, 1.0f);
+		glPushMatrix();
+		glTranslatef(-1.05f, 0.05f, -0.33f);
+		glutSolidSphere(0.07, 20, 20);
+		glPopMatrix();
+		// Right Headlight
+		glColor3f(1.0f, 1.0f, 1.0f);
+		glPushMatrix();
+		glTranslatef(-1.05f, 0.05f, 0.33f);
+		glutSolidSphere(0.07, 20, 20);
+		glPopMatrix();
+
+		//Rear Lights
+
+		// Left Rear Light
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glPushMatrix();
+		glTranslatef(1.0f, 0.06f, -0.33f);
+		glScalef(0.2f, 0.2f, 0.5f);
+		glutSolidCube(0.5);
+		glPopMatrix();
+		// Right Rear Light
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glPushMatrix();
+		glTranslatef(1.0f, 0.06f, 0.33f);
+		glScalef(0.2f, 0.2f, 0.5f);
+		glutSolidCube(0.5);
+		glPopMatrix();
+
+		// Left Rear Light DETAIL
+		glColor3f(0.95f, 0.6f, 0.4f);
+		glPushMatrix();
+		glTranslatef(1.01f, 0.06f, -0.33f);
+		glScalef(0.2f, 0.1f, 0.4f);
+		glutSolidCube(0.5);
+		glPopMatrix();
+		// Right Rear Light DETAIL
+		glColor3f(0.95f, 0.6f, 0.4f);
+		glPushMatrix();
+		glTranslatef(1.01f, 0.06f, 0.33f);
+		glScalef(0.2f, 0.1f, 0.4f); 
+		glutSolidCube(0.5);
+		glPopMatrix();
+
+
+
+		// Bucata fata gri de la faruri
+		glColor3f(0.3f, 0.3f, 0.3f);
+		glPushMatrix();
+		glTranslatef(-0.85f, 0.05f, 0.0f);
+		glScalef(0.8f, 0.5f, 1.7f);
+		glutSolidCube(0.5);
+		glPopMatrix();
+
+		//Liniute pe bucata fata gri de la faruri
+		//1
+		glColor3f(0.6f, 0.6f, 0.6f);
+		glPushMatrix();
+		glTranslatef(-0.86f, 0.05f, 0.0f);
+		glScalef(0.8f, 0.05f, 0.9f);
+		glutSolidCube(0.5);
+		glPopMatrix();
+		//2
+		glColor3f(0.6f, 0.6f, 0.6f);
+		glPushMatrix();
+		glTranslatef(-0.86f, 0.0f, 0.0f);
+		glScalef(0.8f, 0.05f, 0.9f);
+		glutSolidCube(0.5);
+		glPopMatrix();
+		//3
+		glColor3f(0.6f, 0.6f, 0.6f);
+		glPushMatrix();
+		glTranslatef(-0.86f, 0.1f, 0.0f);
+		glScalef(0.8f, 0.05f, 0.9f);
+		glutSolidCube(0.5);
+		glPopMatrix();
+		glPopMatrix();
+
+
+		glDisable(GL_COLOR_MATERIAL);
+		glEnable(GL_LIGHTING);
+
 		glEnable(GL_TEXTURE_2D);
+
 
 		glColor3f(1.0f, 1.0f, 1.0f);
 		glPushMatrix();
 		glScalef(1.0f, 0.5f, 2.0f);
+
+		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, black);
+		glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0);
+
 
 		// Front face
 		glBindTexture(GL_TEXTURE_2D, texturePoliceFront);
@@ -832,7 +1087,7 @@ void renderScene(void)
 		glEnd();
 
 		// Top face
-		glColor3f(0.0f, 0.0f, 0.0f); // Set color to black
+		glColor3f(0.0f, 0.0f, 0.0f);
 		glBegin(GL_QUADS);
 		glVertex3f(-0.5f, 0.5f, 0.5f);
 		glVertex3f(0.5f, 0.5f, 0.5f);
@@ -1108,6 +1363,11 @@ void keysFunc(unsigned char key, int x, int y) {
 		camera3 = true;
 		break;
 
+	case '4':
+		flipFog = !flipFog;
+		cout << "flipfog: " << flipFog << endl;
+		break;
+
 	default:
 		break;
 	}
@@ -1121,7 +1381,7 @@ int main(int argc, char** argv)
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(1200, 800);
-	glutCreateWindow("Proiect 3D");
+	glutCreateWindow("Highway Racer 3D");
 
 	init();
 
@@ -1138,6 +1398,8 @@ int main(int argc, char** argv)
 
 	glutTimerFunc(5000, Obstacole, 0);
 	glutTimerFunc(100, increaseScore, 0);
+	glutTimerFunc(1000, flipTheLight, 0);
+
 
 	// OpenGL init
 	glEnable(GL_DEPTH_TEST);
